@@ -1,4 +1,4 @@
-# fantasy-ranks-pdf
+# Fantasy Football Rankings
 
 [![CI](https://github.com/your-org/fantasy-ranks-pdf/actions/workflows/ci.yml/badge.svg)](https://github.com/your-org/fantasy-ranks-pdf/actions/workflows/ci.yml)
 [![PyPI](https://img.shields.io/pypi/v/fantasy-ranks-pdf.svg)](https://pypi.org/project/fantasy-ranks-pdf/)
