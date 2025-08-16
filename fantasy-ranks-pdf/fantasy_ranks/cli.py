@@ -19,6 +19,7 @@ from fantasy_ranks.render.pdf import render_rankings_pdf
 from fantasy_ranks.render.pdf import render_consensus_pdf
 from fantasy_ranks.utils.tables import ensure_columns, filter_positions
 from fantasy_ranks.utils.consensus import build_consensus
+from fantasy_ranks.utils.analytics import add_tiers, add_vorp
 
 app = typer.Typer(add_completion=False, help="Export fantasy rankings to a styled PDF")
 console = Console()
@@ -46,6 +47,8 @@ def export(
     out: Path = typer.Option(Path("./ESPN_PPR_2025.pdf"), help="Output PDF path."),
     open_: bool = typer.Option(False, "--open", help="Open the generated PDF."),
     raw: bool = typer.Option(False, help="Print CSV to stdout instead of PDF."),
+    tiers: bool = typer.Option(False, help="Annotate tiers using gap-based method."),
+    vorp: bool = typer.Option(False, help="Annotate VORP using inverse-rank proxy."),
 ):
     """Export rankings to a PDF (or CSV to stdout)."""
     provider = _get_provider(source)
@@ -63,6 +66,10 @@ def export(
         console.print("No data parsed from provider; try --raw to debug.", style="yellow")
     df = filter_positions(df, only.split(",")) if only else filter_positions(df, pos_list)
     df = ensure_columns(df, include_bye=include_bye)
+    if tiers:
+        df = add_tiers(df)
+    if vorp:
+        df = add_vorp(df)
 
     title = "Consensus Fantasy Rankings" if source != "espn-editorial" else "ESPN Fantasy Rankings"
     pdf_bytes = render_rankings_pdf(
