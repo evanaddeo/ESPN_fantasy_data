@@ -1,0 +1,28 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.dist/
+.build/
+.eggs/
+.mypy_cache/
+.pytest_cache/
+.coverage*
+htmlcov/
+.env
+.venv/
+.envrc
+*.DS_Store
+instructions.txt
+
+# Editors
+.vscode/
+.idea/
+
+# macOS
+Icon?
+
+# PDFs output
+output/
+*.pdf
+
+docs/images/
