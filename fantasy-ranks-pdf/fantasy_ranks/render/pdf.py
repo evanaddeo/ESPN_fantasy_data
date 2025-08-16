@@ -66,6 +66,7 @@ class RankingsPDF(FPDF):
         self.set_font("Helvetica", style="B", size=12)
         self.set_text_color(*self.text_rgb)
         header_text = f"{self.ctx.title} - {self.ctx.scoring.upper()}"
+        header_text = header_text.replace("—", "-")
         self.set_xy(10, 8)
         self.cell(0, 6, txt=header_text, ln=0)
         self.set_font("Helvetica", size=10)

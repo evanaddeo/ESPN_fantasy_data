@@ -31,6 +31,7 @@ def export(
     source: str = typer.Option("espn-editorial", help="Data source provider."),
     scoring: ScoringEnum = typer.Option(ScoringEnum.ppr, help="Scoring format."),
     positions: Optional[str] = typer.Option(None, help="CSV list, e.g. QB,RB,WR,TE,K,DST"),
+    only: Optional[str] = typer.Option(None, help="Keep only these positions (CSV)."),
     limit: Optional[int] = typer.Option(300, help="Max number of rows to include."),
     include_bye: bool = typer.Option(True, "--include-bye/--no-bye", help="Include bye week column."),
     style: str = typer.Option("light", help="PDF style: light|dark"),
@@ -49,10 +50,13 @@ def export(
         console.print(df.to_csv(index=False))
         raise typer.Exit(0)
 
-    df = filter_positions(df, pos_list)
+    # Normalize and ensure required columns; guard against empty provider results
+    if df.empty:
+        console.print("No data parsed from provider; try --raw to debug.", style="yellow")
+    df = filter_positions(df, only.split(",")) if only else filter_positions(df, pos_list)
     df = ensure_columns(df, include_bye=include_bye)
 
-    title = "Fantasy Football Rankings"
+    title = "ESPN Fantasy Rankings"
     pdf_bytes = render_rankings_pdf(
         df,
         scoring=scoring,

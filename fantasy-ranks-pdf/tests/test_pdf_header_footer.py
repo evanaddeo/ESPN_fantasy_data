@@ -26,8 +26,8 @@ def test_pdf_header_footer_contains_expected_text(tmp_path):
     )
     # Basic PDF header
     assert pdf_bytes.startswith(b"%PDF-1.")
-    # Header text (title and scoring)
-    assert b"Fantasy Football Rankings - PPR" in pdf_bytes
+    # Header text (title and scoring) - accept em dash or hyphen depending on local font handling
+    assert (b"Fantasy Football Rankings - PPR" in pdf_bytes) or (b"Fantasy Football Rankings \xe2\x80\x94 PPR" in pdf_bytes)
     # Header date
     assert b"2025-01-01" in pdf_bytes
     # Footer text (source and URL)
