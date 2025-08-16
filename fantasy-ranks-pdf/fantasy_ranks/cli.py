@@ -13,6 +13,7 @@ from rich.table import Table
 
 from fantasy_ranks.models import ScoringEnum
 from fantasy_ranks.providers.espn_editorial import ESPNEditorialProvider
+from fantasy_ranks.providers.sleeper_adp import SleeperADPProvider
 from fantasy_ranks.render.pdf import render_rankings_pdf
 from fantasy_ranks.utils.tables import ensure_columns, filter_positions
 
@@ -23,6 +24,8 @@ console = Console()
 def _get_provider(source: str):
     if source == "espn-editorial":
         return ESPNEditorialProvider()
+    if source == "sleeper-adp":
+        return SleeperADPProvider()
     raise typer.BadParameter(f"Unsupported source: {source}")
 
 
@@ -56,7 +59,7 @@ def export(
     df = filter_positions(df, only.split(",")) if only else filter_positions(df, pos_list)
     df = ensure_columns(df, include_bye=include_bye)
 
-    title = "ESPN Fantasy Rankings"
+    title = "Consensus Fantasy Rankings" if source != "espn-editorial" else "ESPN Fantasy Rankings"
     pdf_bytes = render_rankings_pdf(
         df,
         scoring=scoring,
