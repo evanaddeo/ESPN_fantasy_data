@@ -9,6 +9,7 @@ from fpdf import FPDF
 
 Position = Literal["QB", "RB", "WR", "TE", "K", "DST"]
 Style = Literal["light", "dark"]
+ConsensusDf = pd.DataFrame
 
 
 @dataclass
@@ -148,4 +149,77 @@ def render_rankings_pdf(
     if isinstance(out, (bytes, bytearray)):
         return bytes(out)
     # Some versions return str encoded latin1
+    return out.encode("latin1")
+
+
+def render_consensus_pdf(
+    df: pd.DataFrame,
+    *,
+    style: Style,
+    generated_date: Optional[date] = None,
+) -> bytes:
+    # Page 1: consensus top 150
+    ctx = RenderContext(
+        title="Consensus Fantasy Rankings",
+        scoring="consensus",
+        source="consensus",
+        source_url="https://github.com/your-org/fantasy-ranks-pdf",
+        include_bye=False,
+        style=style,
+        generated_date=generated_date or date.today(),
+    )
+    pdf = RankingsPDF(ctx)
+    pdf.add_page()
+
+    # Build table columns
+    cols: List[Tuple[str, str, int]] = [
+        ("consensus_rank", "Rank", 15),
+        ("name", "Name", 70),
+        ("team", "Team", 20),
+        ("pos", "Pos", 15),
+        ("delta", "Delta", 20),
+    ]
+    pdf.set_font("Helvetica", style="B", size=10)
+    pdf.set_text_color(*pdf.text_rgb)
+    for _, label, width in cols:
+        pdf.cell(width, 8, label, border=1, align="L")
+    pdf.ln()
+
+    pdf.set_font("Helvetica", size=10)
+    top = df.sort_values("consensus_rank").head(150)
+    for _, row in top.iterrows():
+        pos = str(row.get("pos", "")).upper()
+        rgb = POSITION_COLORS.get(pos, (200, 200, 200))
+        pdf.set_fill_color(*rgb)
+        pdf.set_text_color(*pdf.text_rgb)
+        for key, _, width in cols:
+            value = row.get(key, "")
+            pdf.cell(width, 7, str(value), border=1, align="L", fill=True)
+        pdf.ln()
+
+    # Page 2: biggest differences top +/-25
+    pdf.add_page()
+    pdf.set_font("Helvetica", style="B", size=10)
+    for _, label, width in cols:
+        pdf.cell(width, 8, label, border=1, align="L")
+    pdf.ln()
+    pdf.set_font("Helvetica", size=10)
+    diffs = (
+        df.assign(abs_delta=(df["delta"].abs()))
+        .sort_values("abs_delta", ascending=False)
+        .head(25)
+    )
+    for _, row in diffs.iterrows():
+        pos = str(row.get("pos", "")).upper()
+        rgb = POSITION_COLORS.get(pos, (200, 200, 200))
+        pdf.set_fill_color(*rgb)
+        pdf.set_text_color(*pdf.text_rgb)
+        for key, _, width in cols:
+            value = row.get(key, "")
+            pdf.cell(width, 7, str(value), border=1, align="L", fill=True)
+        pdf.ln()
+
+    out = pdf.output(dest="S")
+    if isinstance(out, (bytes, bytearray)):
+        return bytes(out)
     return out.encode("latin1")

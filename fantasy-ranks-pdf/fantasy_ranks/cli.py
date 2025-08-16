@@ -14,8 +14,11 @@ from rich.table import Table
 from fantasy_ranks.models import ScoringEnum
 from fantasy_ranks.providers.espn_editorial import ESPNEditorialProvider
 from fantasy_ranks.providers.sleeper_adp import SleeperADPProvider
+from fantasy_ranks.providers.yahoo_editorial import YahooEditorialProvider
 from fantasy_ranks.render.pdf import render_rankings_pdf
+from fantasy_ranks.render.pdf import render_consensus_pdf
 from fantasy_ranks.utils.tables import ensure_columns, filter_positions
+from fantasy_ranks.utils.consensus import build_consensus
 
 app = typer.Typer(add_completion=False, help="Export fantasy rankings to a styled PDF")
 console = Console()
@@ -26,6 +29,8 @@ def _get_provider(source: str):
         return ESPNEditorialProvider()
     if source == "sleeper-adp":
         return SleeperADPProvider()
+    if source == "yahoo-editorial":
+        return YahooEditorialProvider()
     raise typer.BadParameter(f"Unsupported source: {source}")
 
 
@@ -94,3 +99,25 @@ def export(
 
 def main() -> None:
     app()
+
+
+@app.command()
+def compare(
+    sources: str = typer.Option("espn-editorial,sleeper-adp", help="CSV list of sources"),
+    scoring: ScoringEnum = typer.Option(ScoringEnum.ppr, help="Scoring format."),
+    limit: int = typer.Option(200, help="Max rows per source before merging."),
+    style: str = typer.Option("light", help="PDF style: light|dark"),
+    out: Path = typer.Option(Path("./Consensus.pdf"), help="Output PDF path."),
+):
+    """Build a consensus across sources and export a two-page PDF."""
+    providers_map = {s.strip(): _get_provider(s.strip()) for s in sources.split(",")}
+    data = {}
+    with console.status("Fetching sources..."):
+        for name, provider in providers_map.items():
+            df = provider.fetch(scoring, limit=limit)
+            data[name] = df
+    consensus = build_consensus(data)
+    pdf_bytes = render_consensus_pdf(consensus, style="dark" if style == "dark" else "light")
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_bytes(pdf_bytes)
+    console.print(f"Saved: {out}")
